@@ -7,7 +7,7 @@ By: Santiago Romo G.
 
 """
 
-import re, logging
+import re, logging, doctest
 from datetime import datetime
 
 def get_user_agent(line: str) -> str:
@@ -23,9 +23,8 @@ def get_user_agent(line: str) -> str:
     >>> get_user_agent('147.96.46.52 - - [10/Oct/2023:12:55:47 +0200] "GET /favicon.ico HTTP/1.1" 404 519 "https://antares.sip.ucm.es/" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0"')
     'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0'
     """
-    if line:
-        user_to_seek = line.split('" ')[-1].strip('" \n')
-        if len(user_to_seek) > 2: return user_to_seek
+    user_to_seek = line.split('" ')[-1].strip('" \n')
+    if len(user_to_seek) > 2: return user_to_seek
 
 
 def is_bot(line: str) -> bool:
@@ -43,12 +42,10 @@ def is_bot(line: str) -> bool:
     >>> is_bot('213.180.203.109 - - [15/Sep/2023:00:12:18 +0200] "GET /robots.txt HTTP/1.1" 302 567 "-" "Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)"')
     True
     '''
-    if line:
-        pattern_to_seek = re.compile(r'bot')
-        if pattern_to_seek.search(line.lower()):
-            return True
-        else: 
-            return False
+    pattern_to_seek = re.compile(r'bot')
+
+    if line: return bool( pattern_to_seek.search(line.lower()))
+    else: return False
 
 
 def get_ipaddr(line: str) -> str:
@@ -61,7 +58,8 @@ def get_ipaddr(line: str) -> str:
     >>> get_ipaddr('147.96.46.52 - - [10/Oct/2023:12:55:47 +0200] "GET /favicon.ico HTTP/1.1" 404 519 "https://antares.sip.ucm.es/" "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/117.0"')
     '147.96.46.52'
     '''
-    return line.split('-')[0].strip()
+    pattern_to_seek = re.compile(r'^([0-9]+\.)+[0-9]+\b')
+    return pattern_to_seek.search(line).group(0)
 
 
 def get_hour(line: str) -> int:
@@ -105,12 +103,11 @@ def histbyhour(filename: str) -> dict[int, int]:
     hours_recorded = dict()
     with open(filename) as file:
           for line in file:
-               if line:
-                accessed_hour = get_hour(line)
-                if accessed_hour in hours_recorded.keys():
-                     hours_recorded[accessed_hour] += 1
-                else:
-                    hours_recorded[accessed_hour] = 1
+            accessed_hour = get_hour(line)
+            if accessed_hour in hours_recorded.keys():
+                hours_recorded[accessed_hour] += 1
+            else:
+                hours_recorded[accessed_hour] = 1
     return hours_recorded
 
 
@@ -139,11 +136,9 @@ def ipaddreses(filename: str) -> set[str]:
     ip_numbers = set()
     with open(filename) as file:
         for line in file:
-            if line:
-                if not is_bot(get_user_agent(line)): ip_numbers.add(get_ipaddr(line))
+            if not is_bot(get_user_agent(line)): ip_numbers.add(get_ipaddr(line))
     return ip_numbers
 
-import doctest
 
 def test_doc():
     doctest.run_docstring_examples(get_user_agent, globals(), verbose=True)
@@ -163,10 +158,10 @@ def test_hist():
 
 def main() -> None:
     try:
-        print(ipaddreses('access.log'))
-        print(histbyhour('access.log'))
-        #test_ipaddresses()
-        #test_hist()
+        #print(ipaddreses('access.log'))
+        #print(histbyhour('access.log'))
+        test_ipaddresses()
+        test_hist()
  
     except FileNotFoundError as e:
         logging.error(f'Error found: {e}')
